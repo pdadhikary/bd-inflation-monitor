@@ -1,0 +1,27 @@
+[server]
+runOnSave = true
+
+[theme]
+base = "dark"
+
+textColor = "#e0def4"
+primaryColor = "#c4a7e7"
+backgroundColor = "#232136"
+secondaryBackgroundColor = "#2a273f"
+redColor = "#eb6f92"
+orangeColor = "#ea9a97"
+yellowColor = "#f6c177"
+blueColor = "#3e8fb0"
+violetColor = "#c4a7e7"
+grayColor = "#6e6a86"
+
+showWidgetBorder = true
+borderColor = "#56526e"
+
+font = "'inter':https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+baseFontWeight = 300
+baseFontSize = 18
+
+headingFont = "inter"
+headingFontWeight = [600, 500, 500, 400, 400, 400, 400]
+headingFontSizes = ["2.5rem", "1.5rem", "1rem"]
