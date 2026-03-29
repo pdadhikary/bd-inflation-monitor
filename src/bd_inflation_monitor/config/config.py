@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     db_port: int
     db_name: str
     api_url: str
+    log_dir: str = "logs"
 
     @property
     def database_url(self) -> str:

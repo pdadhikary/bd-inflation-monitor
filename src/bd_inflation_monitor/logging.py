@@ -3,9 +3,11 @@ import logging.config
 from datetime import datetime
 from pathlib import Path
 
+from .config import settings
+
 
 def setup_logging():
-    log_dir = Path("logs")
+    log_dir = Path(settings.log_dir)
     log_dir.mkdir(exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
