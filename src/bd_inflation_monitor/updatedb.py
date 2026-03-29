@@ -15,8 +15,8 @@ from .logging import setup_logging
 
 logger = logging.getLogger(__name__)
 
-staged_path = Path("data/staged")
-processed_path = Path("data/processed")
+staged_path = Path(settings.stage_dir)
+processed_path = Path(settings.processed_dir)
 
 cpi_insert_query = SQL("""
 INSERT INTO cpi_data (
