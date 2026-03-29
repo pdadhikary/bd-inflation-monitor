@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     db_port: int
     db_name: str
     api_url: str
+    bbs_url: str = "https://bbs.gov.bd/pages/static-pages/6922de7a933eb65569e1ae8f"
     stage_dir: str = "data/staged"
     processed_dir: str = "data/processed"
     log_dir: str = "logs"
