@@ -1,7 +1,28 @@
-from .datapull import main as datapull
-from .deletedb import main as deletedb
-from .initdb import main as initdb
 from .logging import setup_logging
-from .updatedb import main as updatedb
+
+
+def datapull():
+    from .datapull import main
+
+    return main()
+
+
+def deletedb():
+    from .deletedb import main
+
+    return main()
+
+
+def initdb():
+    from .initdb import main
+
+    return main()
+
+
+def updatedb():
+    from .updatedb import main
+
+    return main()
+
 
 __all__ = ["setup_logging", "initdb", "updatedb", "deletedb", "datapull"]
