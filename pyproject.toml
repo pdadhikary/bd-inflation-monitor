@@ -29,7 +29,11 @@ etl = [
     "psycopg[binary]>=3.3.3",
 ]
 dashboard = ["pandas>=2.3.3", "plotly>=6.6.0", "streamlit>=1.55.0"]
-api = ["fastapi>=0.135.2", "psycopg[binary]>=3.3.3", "sqlalchemy>=2.0.48"]
+api = [
+    "fastapi[standard]>=0.135.2",
+    "psycopg[binary]>=3.3.3",
+    "sqlalchemy>=2.0.48",
+]
 
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]
