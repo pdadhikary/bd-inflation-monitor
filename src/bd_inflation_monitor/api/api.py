@@ -14,6 +14,22 @@ async def root():
     return {"message": "Welcome to Inflation Teacker API!"}
 
 
+@router_v1.get("/latest_date")
+async def get_latest_date(db: Session = Depends(get_db)):
+    query_string = """
+    SELECT
+        record_date
+    FROM cpi_data
+    ORDER BY
+        record_date DESC
+    LIMIT 1
+    """
+
+    result = db.execute(text(query_string))
+    rows = result.mappings().all()
+    return rows[0]["record_date"]
+
+
 @router_v1.get("/cpi")
 async def get_cpi(db: Session = Depends(get_db)):
     query_string = """
