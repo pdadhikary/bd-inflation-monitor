@@ -57,6 +57,13 @@ def apply_common_layout(fig, ymin=100, ymax=150):
     return fig
 
 
+def get_latest_date():
+    response = requests.request(
+        method="GET", url=f"{settings.api_url}/api/v1/latest_date"
+    )
+    return response.text.strip('"')
+
+
 @st.cache_data
 def get_cpi_data():
     response = requests.request(method="GET", url=f"{settings.api_url}/api/v1/cpi")
@@ -604,9 +611,11 @@ def get_real_wage_growth_plot():
     return plot
 
 
-today = pd.Timestamp.today()
-end_date = today.replace(day=1).normalize() - pd.DateOffset(months=1)
+latest = pd.to_datetime(get_latest_date(), format="%Y-%m-%d")
+end_date = latest
 start_date = end_date - pd.DateOffset(years=1)
+
+st.write(f"Using Latest Report from {latest.strftime('%B %Y')}")
 
 resolution = st.pills(
     label="Resolution",
