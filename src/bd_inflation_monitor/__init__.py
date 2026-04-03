@@ -25,4 +25,10 @@ def updatedb():
     return main()
 
 
-__all__ = ["setup_logging", "initdb", "updatedb", "deletedb", "datapull"]
+def dbmigrate():
+    from .scripts.dbmigrate import main
+
+    return main()
+
+
+__all__ = ["setup_logging", "initdb", "updatedb", "deletedb", "datapull", "dbmigrate"]

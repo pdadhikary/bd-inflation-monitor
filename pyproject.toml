@@ -18,6 +18,7 @@ initdb = "bd_inflation_monitor:initdb"
 deletedb = "bd_inflation_monitor:deletedb"
 datapull = "bd_inflation_monitor:datapull"
 updatedb = "bd_inflation_monitor:updatedb"
+dbmigrate = "bd_inflation_monitor:dbmigrate"
 
 [project.optional-dependencies]
 etl = [
