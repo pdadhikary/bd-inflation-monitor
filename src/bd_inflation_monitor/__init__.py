@@ -2,25 +2,25 @@ from .logging import setup_logging
 
 
 def datapull():
-    from .datapull import main
+    from .scripts.datapull import main
 
     return main()
 
 
 def deletedb():
-    from .deletedb import main
+    from .scripts.deletedb import main
 
     return main()
 
 
 def initdb():
-    from .initdb import main
+    from .scripts.initdb import main
 
     return main()
 
 
 def updatedb():
-    from .updatedb import main
+    from .scripts.updatedb import main
 
     return main()
 

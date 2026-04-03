@@ -7,8 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from bd_inflation_monitor.config import settings
-
-from .logging import setup_logging
+from bd_inflation_monitor.logging import setup_logging
 
 logger = logging.getLogger()
 

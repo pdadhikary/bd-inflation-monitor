@@ -10,8 +10,7 @@ from bd_inflation_monitor.etl.extraction import (
     extract_monthly_cpi_data,
     extract_monthly_wri_data,
 )
-
-from .logging import setup_logging
+from bd_inflation_monitor.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 

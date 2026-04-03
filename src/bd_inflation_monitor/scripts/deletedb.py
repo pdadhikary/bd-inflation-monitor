@@ -4,8 +4,7 @@ import psycopg
 from psycopg.sql import SQL
 
 from bd_inflation_monitor.config import settings
-
-from .logging import setup_logging
+from bd_inflation_monitor.logging import setup_logging
 
 logger = logging.getLogger(__name__)
 
