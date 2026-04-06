@@ -1,6 +1,6 @@
 import logging
 import sys
-from datetime import datetime
+from datetime import date, timedelta
 from pathlib import Path
 
 import requests
@@ -57,19 +57,21 @@ def datapull():
             else:
                 files.append("")
 
-    current_datetime = datetime.now()
-    current_month = current_datetime.strftime("%B")
+    current_reporting_date = date.today().replace(day=1) - timedelta(days=1)
+    current_reporting_month = current_reporting_date.strftime("%B")
 
     file_dict = dict(zip(months[1:], files[1:]))
 
-    if current_month in file_dict.keys():
+    if current_reporting_month in file_dict.keys():
         save_dir = Path(settings.stage_dir)
-        save_path = save_dir / f"{current_datetime.strftime('%b%Y')}.xlsx"
-        logger.info(f"Downlaoding report for {current_month}...")
-        download_excel_file(file_dict[current_month], str(save_path))
-        logger.info(f"Successfully downloaded report for {current_month}...")
+        save_path = save_dir / f"{current_reporting_date.strftime('%b%Y')}.xlsx"
+        logger.info(f"Downlaoding report for {current_reporting_month}...")
+        download_excel_file(file_dict[current_reporting_month], str(save_path))
+        logger.info(f"Successfully downloaded report for {current_reporting_month}...")
     else:
-        logger.info(f"Report for {current_month} is not available in the BBS site yet.")
+        logger.info(
+            f"Report for {current_reporting_month} is not available in the BBS site yet."
+        )
 
 
 def main():
