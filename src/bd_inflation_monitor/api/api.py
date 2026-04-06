@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, FastAPI
+from datetime import date
+from typing import Optional
+
+from fastapi import APIRouter, Depends, FastAPI, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -31,8 +34,13 @@ async def get_latest_date(db: Session = Depends(get_db)):
 
 
 @router_v1.get("/cpi")
-async def get_cpi(db: Session = Depends(get_db)):
-    query_string = """
+async def get_cpi(
+    db: Session = Depends(get_db),
+    record_date: Optional[date] = Query(
+        default=None, description="Filter by date (YYYY-MM-DD)"
+    ),
+):
+    base_query = """
     SELECT
         record_date,
         cat.name AS region,
@@ -48,16 +56,26 @@ async def get_cpi(db: Session = Depends(get_db)):
     WINDOW w AS (
         PARTITION BY index_id, region_id
         ORDER BY record_date
-    );
+    )
     """
-    result = db.execute(text(query_string))
+    if record_date:
+        query_string = f"SELECT * FROM ({base_query}) AS cpi_with_lags WHERE record_date <= :record_date"
+        result = db.execute(text(query_string), {"record_date": record_date})
+    else:
+        query_string = base_query
+        result = db.execute(text(query_string))
     rows = result.mappings().all()
     return rows
 
 
 @router_v1.get("/wri")
-async def get_wri(db: Session = Depends(get_db)):
-    query_string = """
+async def get_wri(
+    db: Session = Depends(get_db),
+    record_date: Optional[date] = Query(
+        default=None, description="Filter by date (YYYY-MM-DD)"
+    ),
+):
+    base_query = """
     SELECT
         record_date,
         r.name AS region,
@@ -73,16 +91,26 @@ async def get_wri(db: Session = Depends(get_db)):
     WINDOW w AS (
         PARTITION BY region_id, sector_id
         ORDER BY record_date
-    );
+    )
     """
-    result = db.execute(text(query_string))
+    if record_date:
+        query_string = f"SELECT * FROM ({base_query}) AS wri_with_lags WHERE record_date <= :record_date"
+        result = db.execute(text(query_string), {"record_date": record_date})
+    else:
+        query_string = base_query
+        result = db.execute(text(query_string))
     rows = result.mappings().all()
     return rows
 
 
 @router_v1.get("/wri_by_region")
-async def get_wri_by_region(db: Session = Depends(get_db)):
-    query_string = """
+async def get_wri_by_region(
+    db: Session = Depends(get_db),
+    record_date: Optional[date] = Query(
+        default=None, description="Filter by date (YYYY-MM-DD)"
+    ),
+):
+    base_query = """
     WITH wri_calc AS (
         SELECT
             record_date,
@@ -113,17 +141,26 @@ async def get_wri_by_region(db: Session = Depends(get_db)):
         wri_growth
     FROM wri_calc
     WHERE rn = 1
-    AND wri_growth IS NOT NULL;
+    AND wri_growth IS NOT NULL
     """
-
-    result = db.execute(text(query_string))
+    if record_date:
+        query_string = f"SELECT * FROM ({base_query}) AS wri_by_region WHERE record_date <= :record_date"
+        result = db.execute(text(query_string), {"record_date": record_date})
+    else:
+        query_string = base_query
+        result = db.execute(text(query_string))
     rows = result.mappings().all()
     return rows
 
 
 @router_v1.get("/wri_moving_avg")
-async def get_wri_moving_avg(db: Session = Depends(get_db)):
-    query_string = """
+async def get_wri_moving_avg(
+    db: Session = Depends(get_db),
+    record_date: Optional[date] = Query(
+        default=None, description="Filter by date (YYYY-MM-DD)"
+    ),
+):
+    base_query = """
     WITH yoy AS (
         SELECT
             d.record_date,
@@ -156,17 +193,27 @@ async def get_wri_moving_avg(db: Session = Depends(get_db)):
             2
         ) AS yoy_12m_moving_avg
     FROM yoy
-    ORDER BY record_date, region, sector;
+    ORDER BY record_date, region, sector
     """
 
-    result = db.execute(text(query_string))
+    if record_date:
+        query_string = f"SELECT * FROM ({base_query}) AS wri_moving_avg WHERE record_date <= :record_date"
+        result = db.execute(text(query_string), {"record_date": record_date})
+    else:
+        query_string = base_query
+        result = db.execute(text(query_string))
     rows = result.mappings().all()
     return rows
 
 
 @router_v1.get("/cpi_moving_avg")
-async def get_cpi_moving_avg(db: Session = Depends(get_db)):
-    query_string = """
+async def get_cpi_moving_avg(
+    db: Session = Depends(get_db),
+    record_date: Optional[date] = Query(
+        default=None, description="Filter by date (YYYY-MM-DD)"
+    ),
+):
+    base_query = """
     WITH yoy AS (
         SELECT
             d.record_date,
@@ -199,16 +246,26 @@ async def get_cpi_moving_avg(db: Session = Depends(get_db)):
             2
         ) AS yoy_12m_moving_avg
     FROM yoy
-    ORDER BY record_date, region, index;
+    ORDER BY record_date, region, index
     """
-    result = db.execute(text(query_string))
+    if record_date:
+        query_string = f"SELECT * FROM ({base_query}) AS cpi_moving_avg WHERE record_date <= :record_date"
+        result = db.execute(text(query_string), {"record_date": record_date})
+    else:
+        query_string = base_query
+        result = db.execute(text(query_string))
     rows = result.mappings().all()
     return rows
 
 
 @router_v1.get("/real_wage_growth")
-def get_real_wage_growth(db: Session = Depends(get_db)):
-    query_string = """
+def get_real_wage_growth(
+    db: Session = Depends(get_db),
+    record_date: Optional[date] = Query(
+        default=None, description="Filter by date (YYYY-MM-DD)"
+    ),
+):
+    base_query = """
     WITH cpi_yoy AS (
         SELECT
             record_date,
@@ -237,10 +294,15 @@ def get_real_wage_growth(db: Session = Depends(get_db)):
     FROM cpi_yoy c
     JOIN wri_yoy w
         ON c.record_date = w.record_date
-    ORDER BY c.record_date;
+    ORDER BY c.record_date
     """
 
-    result = db.execute(text(query_string))
+    if record_date:
+        query_string = f"SELECT * FROM ({base_query}) AS real_wage_growth WHERE record_date <= :record_date"
+        result = db.execute(text(query_string), {"record_date": record_date})
+    else:
+        query_string = base_query
+        result = db.execute(text(query_string))
     rows = result.mappings().all()
     return rows
 
