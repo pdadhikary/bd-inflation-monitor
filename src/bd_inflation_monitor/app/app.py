@@ -612,7 +612,7 @@ def main():
     latest_dt = pd.to_datetime(latest, format="%Y-%m-%d")
     current_month = latest_dt.strftime("%Y-%m-%d")
 
-    st.write(f"Using Latest Report from **{latest_dt.strftime('%B %Y')}**")
+    st.write(f"Using Latest Report for **{latest_dt.strftime('%B %Y')}**")
 
     resolution = st.pills(
         label="Resolution",
