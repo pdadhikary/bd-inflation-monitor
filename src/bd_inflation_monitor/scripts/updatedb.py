@@ -72,106 +72,84 @@ def extract_and_update_data():
     index_mapping = dict(indexes)
     region_mapping = dict(regions)
     wri_region_mapping = dict(wri_regions)
-    wri_sector_mappping = dict(wri_sectors)
+    wri_sector_mapping = dict(wri_sectors)
     logger.debug("Successfully converted fetched mappings to dictionary.")
 
     for staged_file in staged_path.glob("*.xlsx"):
         logger.info(f"Found staged file for extraction: {staged_file}")
-        logger.debug("Connecting to database.")
-        with psycopg.connect(conninfo=settings.database_info) as conn:
-            with conn.cursor() as cur:
-                logger.debug("Successfully connected to database.")
-                try:
+        try:
+            with psycopg.connect(conninfo=settings.database_info) as conn:
+                with conn.cursor() as cur:
                     if staged_file.name.startswith("Legacy"):
                         logger.info("Extracting Legacy CPI data from file.")
                         df_cpi = pl.read_excel(staged_file, sheet_name="CPI")
-                        logger.info("Successfully extracted Legacy CPI data from file.")
-
-                        logger.debug("Extracting dates.")
                         df_cpi = df_cpi.with_columns(
-                            pl.col("record_date").str.replace("’", "'")
+                            pl.col("record_date").str.replace("'", "'")
                         )
                         df_cpi = df_cpi.with_columns(
                             pl.col("record_date").str.strptime(pl.Date, format="%b'%y")
                         )
-
-                        logger.debug("Applying category mapping.")
                         df_cpi = df_cpi.with_columns(
                             pl.col("region").replace(region_mapping).cast(pl.Int32)
                         )
-
-                        logger.debug("Applying index mapping.")
                         df_cpi = df_cpi.with_columns(
                             pl.col("index").replace(index_mapping).cast(pl.Int32)
                         )
 
                         logger.info("Extracting Legacy WRI data from file.")
                         df_wri = pl.read_excel(staged_file, sheet_name="WRI")
-                        logger.info("Successfully extracted WRI data from file.")
-
-                        logger.debug("Extracting dates.")
                         df_wri = df_wri.with_columns(
-                            pl.col("record_date").str.replace("’", "'")
+                            pl.col("record_date").str.replace("'", "'")
                         )
                         df_wri = df_wri.with_columns(
                             pl.col("record_date").str.strptime(pl.Date, format="%b'%y")
                         )
-
-                        logger.debug("Applying region mapping.")
                         df_wri = df_wri.with_columns(
                             pl.col("region").replace(wri_region_mapping).cast(pl.Int32)
                         )
-
-                        logger.debug("Applying sector mapping.")
                         df_wri = df_wri.with_columns(
-                            pl.col("sector").replace(wri_sector_mappping).cast(pl.Int32)
+                            pl.col("sector").replace(wri_sector_mapping).cast(pl.Int32)
                         )
-
                     else:
                         logger.info("Extracting CPI data from file.")
                         df_cpi = extract_monthly_cpi_data(str(staged_file))
-                        logger.info("Successfully extracted CPI data from file.")
-
-                        logger.debug("Applying category mapping.")
                         df_cpi = df_cpi.with_columns(
                             pl.col("region").replace(region_mapping).cast(pl.Int32)
                         )
-
-                        logger.debug("Applying index mapping.")
                         df_cpi = df_cpi.with_columns(
                             pl.col("index").replace(index_mapping).cast(pl.Int32)
                         )
 
                         logger.info("Extracting WRI data from file.")
                         df_wri = extract_monthly_wri_data(str(staged_file))
-                        logger.info("Successfully extracted WRI data from file.")
-
-                        logger.debug("Applying region mapping.")
                         df_wri = df_wri.with_columns(
                             pl.col("region").replace(wri_region_mapping).cast(pl.Int32)
                         )
-
-                        logger.debug("Applying sector mapping.")
                         df_wri = df_wri.with_columns(
-                            pl.col("sector").replace(wri_sector_mappping).cast(pl.Int32)
+                            pl.col("sector").replace(wri_sector_mapping).cast(pl.Int32)
                         )
 
                     logger.info("Inserting CPI data into database.")
                     cur.executemany(cpi_insert_query, df_cpi.rows())
-                    logger.info("Successfully inserted CPI data into database.")
 
                     logger.info("Inserting WRI data into database.")
                     cur.executemany(wri_insert_query, df_wri.rows())
-                    logger.info("Successfully WRI inserted data into database.")
 
-                except Exception:
-                    logger.exception("Couldn't insert data into database.")
-                    continue
+                conn.commit()
+                logger.info(f"Successfully processed and committed {staged_file.name}.")
 
-        destination = processed_path / staged_file.name
-        logging.debug(f"Moving file to {destination}.")
-        staged_file.rename(destination)
-        logging.debug("Successfully moved file to processed directory.")
+            destination = processed_path / staged_file.name
+            logger.debug(f"Moving {staged_file.name} to processed directory.")
+            staged_file.rename(destination)
+            logger.debug("Successfully moved file to processed directory.")
+
+        except Exception:
+            logger.exception(
+                f"Failed to process {staged_file.name}, moving to failed dir."
+            )
+            failed_path = Path(settings.stage_dir) / "failed"
+            failed_path.mkdir(exist_ok=True)
+            staged_file.rename(failed_path / staged_file.name)
 
 
 def main():

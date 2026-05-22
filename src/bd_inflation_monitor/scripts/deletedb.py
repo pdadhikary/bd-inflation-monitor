@@ -24,16 +24,15 @@ DROP TABLE IF EXISTS wri_sector_lookup;
 
 
 def deletedb():
-    logging.debug("Connecting to databse.")
+    logger.debug("Connecting to database.")
     with psycopg.connect(conninfo=settings.database_info) as conn:
-        logging.debug("Successfully logged into database.")
+        logger.debug("Successfully connected to database.")
         with conn.cursor() as cur:
-            logging.info("Dropping database.")
+            logger.info("Dropping tables.")
             cur.execute(query_string)
-            logging.info("Successfully dropped database.")
             conn.commit()
-            logging.info("Successfully saved changes.")
-    logging.debug("Database connection closed.")
+            logger.info("Successfully dropped tables and committed.")
+    logger.debug("Database connection closed.")
 
 
 def main():

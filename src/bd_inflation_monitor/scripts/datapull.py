@@ -1,5 +1,4 @@
 import logging
-import sys
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -9,69 +8,75 @@ from bs4 import BeautifulSoup
 from bd_inflation_monitor.config import settings
 from bd_inflation_monitor.logging import setup_logging
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
-def download_excel_file(url, save_path):
+def download_excel_file(url: str, save_path: Path) -> None:
     logger.info(f"Downloading {url}...")
     response = requests.get(url)
-
-    if response.status_code == 200:
-        with open(save_path, "wb") as f:
-            f.write(response.content)
-        logger.info(f"Successfully downloaded and saved to {save_path}")
-    else:
-        logger.error(f"Failed to download. Status code: {response.status_code}")
+    response.raise_for_status()
+    save_path.write_bytes(response.content)
+    logger.info(f"Saved to {save_path}")
 
 
-def datapull():
+def datapull() -> None:
     try:
         response = requests.get(settings.bbs_url, verify=False)
-    except requests.exceptions.ConnectionError:
-        logger.error("Could not connect to BBS site.")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Unexpected error occured: {e}")
-        sys.exit(1)
+        response.raise_for_status()
+    except requests.exceptions.ConnectionError as e:
+        raise RuntimeError(f"Could not connect to BBS site: {e}") from e
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"HTTP error fetching BBS site: {e}") from e
 
-    logger.info("Searching for this months report...")
+    logger.info("Searching for this month's report...")
     soup = BeautifulSoup(response.text, "html.parser")
-
     table = soup.find("table", class_="ck-table-resized")
-    assert table is not None
-    rows = table.find_all("tr")
-    assert rows is not None
 
+    if table is None:
+        raise ValueError(
+            "Could not find expected table (class='ck-table-resized') on BBS page. "
+            "The site layout may have changed."
+        )
+
+    rows = table.find_all("tr")
     months: list[str] = []
     files: list[str] = []
+
     for row in rows:
         cells = row.find_all("td")
-        assert cells is not None
-
-        if cells[-3].text != " ":
-            months.append(cells[-3].text)
+        if not cells:
+            continue
+        if cells[-3].text.strip():
+            months.append(cells[-3].text.strip())
             file_link = cells[-1].find("a")
+            files.append(str(file_link["href"]) if file_link else "")
 
-            if file_link is not None:
-                files.append(str(file_link["href"]))
-            else:
-                files.append("")
+    if len(months) < 2:
+        raise ValueError(f"Parsed fewer rows than expected from BBS table: {months}")
 
     current_reporting_date = date.today().replace(day=1) - timedelta(days=1)
     current_reporting_month = current_reporting_date.strftime("%B")
-
     file_dict = dict(zip(months[1:], files[1:]))
 
-    if current_reporting_month in file_dict.keys():
-        save_dir = Path(settings.stage_dir)
-        save_path = save_dir / f"{current_reporting_date.strftime('%b%Y')}.xlsx"
-        logger.info(f"Downlaoding report for {current_reporting_month}...")
-        download_excel_file(file_dict[current_reporting_month], str(save_path))
-        logger.info(f"Successfully downloaded report for {current_reporting_month}...")
-    else:
+    if current_reporting_month not in file_dict:
         logger.info(
-            f"Report for {current_reporting_month} is not available in the BBS site yet."
+            f"Report for {current_reporting_month} is not yet available on the BBS site."
         )
+        return
+
+    url = file_dict[current_reporting_month]
+    if not url:
+        raise ValueError(
+            f"Found month entry for {current_reporting_month} but the download link is empty."
+        )
+
+    save_dir = Path(settings.stage_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+    save_path = save_dir / f"{current_reporting_date.strftime('%b%Y')}.xlsx"
+
+    logger.info(f"Downloading report for {current_reporting_month}...")
+    download_excel_file(url, save_path)
+    logger.info(f"Successfully downloaded report for {current_reporting_month}.")
 
 
 def main():
