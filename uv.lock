@@ -67,11 +67,8 @@ name = "bd-inflation-monitor"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "pandas" },
-    { name = "plotly" },
     { name = "pydantic-settings" },
     { name = "requests" },
-    { name = "streamlit" },
 ]
 
 [package.optional-dependencies]
@@ -101,9 +98,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.135.2" },
     { name = "fastexcel", marker = "extra == 'etl'", specifier = ">=0.19.0" },
     { name = "httpx", marker = "extra == 'etl'", specifier = ">=0.28.1" },
-    { name = "pandas", specifier = ">=2.3.3" },
     { name = "pandas", marker = "extra == 'dashboard'", specifier = ">=2.3.3" },
-    { name = "plotly", specifier = ">=6.6.0" },
     { name = "plotly", marker = "extra == 'dashboard'", specifier = ">=6.6.0" },
     { name = "polars", marker = "extra == 'etl'", specifier = ">=1.39.3" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'api'", specifier = ">=3.3.3" },
@@ -111,7 +106,6 @@ requires-dist = [
     { name = "pydantic-settings" },
     { name = "requests", specifier = ">=2.33.0" },
     { name = "sqlalchemy", marker = "extra == 'api'", specifier = ">=2.0.48" },
-    { name = "streamlit", specifier = ">=1.55.0" },
     { name = "streamlit", marker = "extra == 'dashboard'", specifier = ">=1.55.0" },
 ]
 provides-extras = ["etl", "dashboard", "api"]
