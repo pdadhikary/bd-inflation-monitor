@@ -552,6 +552,284 @@ def get_real_wage_growth_plot(latest: str | None):
 
 
 @st.cache_data
+def get_real_wage_index_plot(latest: str | None):
+    df_wri = get_wri_data(latest)
+    df_cpi = get_cpi_data(latest)
+    if df_wri is None or df_cpi is None:
+        return go.Figure()
+
+    df_wri = df_wri[(df_wri["region"] == "national") & (df_wri["sector"] == "general")]
+    df_cpi = df_cpi[
+        (df_cpi["region"] == "national") & (df_cpi["index"] == "general index")
+    ]
+
+    df = pd.merge(
+        df_wri[["record_date", "wri"]],
+        df_cpi[["record_date", "cpi"]],
+        on="record_date",
+    ).sort_values("record_date")
+    df["real_wage_index"] = df["wri"] / df["cpi"] * 100
+    df["real_wage_index"] = df["real_wage_index"] / df["real_wage_index"].iloc[0] * 100
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df["record_date"],
+            y=df["real_wage_index"],
+            mode="lines",
+            line_color="rgba(196, 167, 231, 1.0)",
+            fill="tozeroy",
+            fillcolor="rgba(196, 167, 231, 0.2)",
+            hovertemplate="Date: %{x|%b %Y}<br>Real Wage Index: %{y:.2f}<extra></extra>",
+            name="Real Wage Index",
+        )
+    )
+    fig.add_hline(
+        y=100,
+        line_dash="dash",
+        line_color="#908caa",
+        line_width=1,
+        annotation_text="base",
+        annotation_position="bottom left",
+    )
+    fig.update_yaxes(title_text="Index (base 100)")
+    fig.update_xaxes(title_text=None)
+    fig.update_layout(title="Real Wage Index (Purchasing Power)")
+    apply_common_layout(fig)
+    return fig
+
+
+def _make_kpi(
+    title,
+    value,
+    reference,
+    increasing_color,
+    decreasing_color,
+    bg_x=None,
+    bg_y=None,
+    bg_color="rgba(196, 167, 231, 0.25)",
+):
+    fig = go.Figure()
+    if bg_x is not None and bg_y is not None and len(bg_y) > 1:
+        fig.add_trace(
+            go.Scatter(
+                x=bg_x,
+                y=bg_y,
+                mode="lines",
+                line=dict(color=bg_color, width=1.5),
+                fill="tozeroy",
+                fillcolor=bg_color,
+                hovertemplate="%{x|%b %Y}<br>Value: %{y:.2f}<extra></extra>",
+                showlegend=False,
+            )
+        )
+    fig.add_trace(
+        go.Indicator(
+            mode="number+delta",
+            value=value,
+            delta={
+                "reference": reference,
+                "relative": True,
+                "valueformat": ".2%",
+                "font": {"size": 18},
+                "increasing": {"color": increasing_color},
+                "decreasing": {"color": decreasing_color},
+            },
+            title={"text": title, "font": {"size": 12}},
+        )
+    )
+    fig.update_layout(
+        height=160,
+        margin=dict(l=14, r=14, t=42, b=16),
+        paper_bgcolor="rgba(0,0,0,0)",
+    )
+    fig.update_xaxes(visible=False, showgrid=False, zeroline=False)
+    if bg_x is not None and len(bg_y) > 1:
+        yv = pd.Series(bg_y, dtype="float")
+        ymin, ymax = float(yv.min()), float(yv.max())
+        pad = (ymax - ymin) * 0.1 if ymax > ymin else 1.0
+        fig.update_yaxes(
+            visible=False, showgrid=False, zeroline=False, range=[ymin - pad, ymax + pad]
+        )
+    else:
+        fig.update_yaxes(visible=False, showgrid=False, zeroline=False)
+    return fig
+
+
+def _make_kpi_abs(
+    title,
+    value,
+    increasing_color,
+    decreasing_color,
+    bg_x=None,
+    bg_y=None,
+    bg_color="rgba(196, 167, 231, 0.25)",
+):
+    fig = go.Figure()
+    if bg_x is not None and bg_y is not None and len(bg_y) > 1:
+        fig.add_trace(
+            go.Scatter(
+                x=bg_x,
+                y=bg_y,
+                mode="lines",
+                line=dict(color=bg_color, width=1.5),
+                fill="tozeroy",
+                fillcolor=bg_color,
+                hovertemplate="%{x|%b %Y}<br>Value: %{y:.2f}<extra></extra>",
+                showlegend=False,
+            )
+        )
+    fig.add_trace(
+        go.Indicator(
+            mode="number+delta",
+            value=value,
+            delta={
+                "reference": 0,
+                "relative": False,
+                "valueformat": ".2f",
+                "suffix": "%",
+                "font": {"size": 18},
+                "increasing": {"color": increasing_color},
+                "decreasing": {"color": decreasing_color},
+            },
+            title={"text": title, "font": {"size": 12}},
+        )
+    )
+    fig.update_layout(
+        height=160,
+        margin=dict(l=14, r=14, t=42, b=16),
+        paper_bgcolor="rgba(0,0,0,0)",
+    )
+    fig.update_xaxes(visible=False, showgrid=False, zeroline=False)
+    if bg_x is not None and len(bg_y) > 1:
+        yv = pd.Series(bg_y, dtype="float")
+        ymin, ymax = float(yv.min()), float(yv.max())
+        pad = (ymax - ymin) * 0.1 if ymax > ymin else 1.0
+        fig.update_yaxes(
+            visible=False, showgrid=False, zeroline=False, range=[ymin - pad, ymax + pad]
+        )
+    else:
+        fig.update_yaxes(visible=False, showgrid=False, zeroline=False)
+    return fig
+
+
+@st.cache_data
+def get_kpi_cards(latest: str | None, current_month: str, resolution: str):
+    df_cpi = get_cpi_data(latest)
+    df_wri = get_wri_data(latest)
+    df_cpi_m = get_cpi_moving_avg_data(latest)
+    df_wri_m = get_wri_moving_avg_data(latest)
+    df_rwg = get_real_wage_growth_data(latest)
+    if any(d is None for d in (df_cpi, df_wri, df_cpi_m, df_wri_m, df_rwg)):
+        return None
+
+    cpi_gen = df_cpi[
+        (df_cpi["region"] == "national") & (df_cpi["index"] == "general index")
+    ]
+    wri_gen = df_wri[(df_wri["region"] == "national") & (df_wri["sector"] == "general")]
+    cpi_gen_m = df_cpi_m[
+        (df_cpi_m["region"] == "national") & (df_cpi_m["index"] == "general index")
+    ]
+    wri_gen_m = df_wri_m[
+        (df_wri_m["region"] == "national") & (df_wri_m["sector"] == "general")
+    ]
+
+    rc = cpi_gen[cpi_gen["record_date"] == current_month]
+    rw = wri_gen[wri_gen["record_date"] == current_month]
+    if rc.empty or rw.empty:
+        return None
+    cur_cpi = float(rc["cpi"].iloc[0])
+    cur_wri = float(rw["wri"].iloc[0])
+
+    def cpi_rate(pt, mav):
+        r = pt[pt["record_date"] == current_month]
+        if r.empty:
+            return 0.0
+        row = r.iloc[0]
+        if resolution == "MoM":
+            v = row["mom_inflation"]
+        elif resolution == "YoY":
+            v = row["yoy_inflation"]
+        else:
+            mr = mav[mav["record_date"] == current_month]
+            v = mr.iloc[0]["yoy_12m_moving_avg"] if not mr.empty else 0.0
+        return float(v) if pd.notna(v) else 0.0
+
+    def wri_rate(pt, mav):
+        r = pt[pt["record_date"] == current_month]
+        if r.empty:
+            return 0.0
+        row = r.iloc[0]
+        if resolution == "MoM":
+            v = row["mom_wri_growth"]
+        elif resolution == "YoY":
+            v = row["yoy_wri_growth"]
+        else:
+            mr = mav[mav["record_date"] == current_month]
+            v = mr.iloc[0]["yoy_12m_moving_avg"] if not mr.empty else 0.0
+        return float(v) if pd.notna(v) else 0.0
+
+    infl = cpi_rate(cpi_gen, cpi_gen_m)
+    wage = wri_rate(wri_gen, wri_gen_m)
+
+    nonfood = df_cpi[
+        (df_cpi["region"] == "national") & (df_cpi["index"] == "non-food index")
+    ]
+    nonfood_m = df_cpi_m[
+        (df_cpi_m["region"] == "national") & (df_cpi_m["index"] == "non-food index")
+    ]
+    nonfood_infl = cpi_rate(nonfood, nonfood_m)
+    nf_row = nonfood[nonfood["record_date"] == current_month]
+    nf_level = float(nf_row["cpi"].iloc[0]) if not nf_row.empty else cur_cpi
+
+    rwg_row = df_rwg[df_rwg["record_date"] == current_month]
+    realwg = float(rwg_row["real_wage_growth"].iloc[0]) if not rwg_row.empty else 0.0
+
+    cards = [
+        _make_kpi(
+            "CPI",
+            cur_cpi,
+            cur_cpi / (1 + infl / 100),
+            "#eb6f92",
+            "#9ccfd8",
+            bg_x=cpi_gen["record_date"],
+            bg_y=cpi_gen["cpi"],
+            bg_color="rgba(156, 207, 216, 0.25)",
+        ),
+        _make_kpi(
+            "WRI",
+            cur_wri,
+            cur_wri / (1 + wage / 100),
+            "#f6c177",
+            "#eb6f92",
+            bg_x=wri_gen["record_date"],
+            bg_y=wri_gen["wri"],
+            bg_color="rgba(246, 193, 119, 0.25)",
+        ),
+        _make_kpi_abs(
+            "Real Wage Growth (YoY)",
+            realwg,
+            "#9ccfd8",
+            "#eb6f92",
+            bg_x=df_rwg["record_date"],
+            bg_y=df_rwg["real_wage_growth"],
+            bg_color="rgba(235, 111, 146, 0.25)",
+        ),
+        _make_kpi(
+            "Non-Food CPI",
+            nf_level,
+            nf_level / (1 + nonfood_infl / 100),
+            "#eb6f92",
+            "#9ccfd8",
+            bg_x=nonfood["record_date"],
+            bg_y=nonfood["cpi"],
+            bg_color="rgba(62, 143, 176, 0.22)",
+        ),
+    ]
+    return cards
+
+
+@st.cache_data
 def get_wri_by_region_choropleth(latest: str | None, sector: str):
     df_wri = get_wri_by_region_data(latest)
     bd_div_json = get_bd_division_geojson_data()
