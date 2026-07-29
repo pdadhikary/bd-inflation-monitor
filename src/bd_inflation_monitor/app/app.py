@@ -860,19 +860,34 @@ def get_wri_by_region_choropleth(latest: str | None, sector: str):
         lat=division_lats,
         text=division_names,
         mode="text",
-        textfont=dict(size=13, color="#e0def4", family="Inter", weight="bold"),
+        textfont={"size":13, "color":"#e0def4", "family":"Inter", "weight":"bold"},
         hoverinfo="skip",
     )
-    fig.update_geos(visible=False, fitbounds="locations", bgcolor="rgba(0,0,0,0)")
+    fig.update_geos(
+        visible=False,
+        bgcolor="rgba(0,0,0,0)",
+        projection_type="natural earth",
+        projection_scale=6,
+        center={"lat":23.7, "lon":90.35},
+        lataxis_range=[20.0, 55.2],
+        lonaxis_range=[57.5, 150.3],
+    )
     fig.update_layout(
-        margin=dict(l=0, r=0, t=40, b=0),
-        autosize=True,
+        margin={"r":0, "t":0, "l":0, "b":0},
+        height=520,
         dragmode=False,
-        coloraxis_colorbar=dict(title="Wage Growth (%)"),
+        autosize=True,
+        coloraxis_colorbar={
+            "title":"Wage Growth (%)",
+            "lenmode":"fraction",
+            "len":0.45,
+            "thicknessmode":"fraction",
+            "thickness":0.025,
+        },
     )
     fig.data[0].update(
         marker_line_color="#232136",
-        marker_line_width=2,
+        marker_line_width=1.5,
         hovertemplate="<b>%{location}</b><br>Wage Growth: %{z:.2f}%<extra></extra>",
     )
     return fig
