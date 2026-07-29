@@ -152,13 +152,17 @@ def get_bd_division_geojson_data() -> dict | None:
         return None
 
 
-def apply_common_layout(fig, ymin=100, ymax=150):
+def apply_common_layout(fig, ymin=None, ymax=None):
     fig.update_layout(
-        height=450,
-        margin=dict(l=60, r=20, t=40, b=40),
+        height=280,
+        margin=dict(l=64, r=10, t=38, b=25),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
-    fig.update_yaxes(range=[ymin, ymax], automargin=False, domain=[0, 1])
+    if ymin is not None and ymax is not None:
+        fig.update_yaxes(range=[ymin, ymax], automargin=False, domain=[0, 1])
+    else:
+        fig.update_yaxes(automargin=False, domain=[0, 1])
+    fig.update_yaxes(title_standoff=12)
     return fig
 
 
