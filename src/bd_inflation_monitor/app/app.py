@@ -897,7 +897,6 @@ def get_wri_by_region_choropleth(latest: str | None, sector: str):
 
 
 def main():
-    # Checked every hour — cheap version query drives all cache busting below
     latest = get_latest_date()
 
     if latest is None:
@@ -920,29 +919,27 @@ def main():
     if resolution is None:
         resolution = "YoY"
 
-    col11, col12 = st.columns([3, 4])
+    cards = get_kpi_cards(latest, current_month, resolution)
+    if cards is not None:
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
+            st.container(border=True).plotly_chart(cards[0], width="stretch")
+        with k2:
+            st.container(border=True).plotly_chart(cards[1], width="stretch")
+        with k3:
+            st.container(border=True).plotly_chart(cards[2], width="stretch")
+        with k4:
+            st.container(border=True).plotly_chart(cards[3], width="stretch")
 
-    with col11:
-        subcol1, subcol2 = st.columns([1, 1])
-        left_cell = subcol1.container(
-            border=True, height="stretch", vertical_alignment="center"
+    r1c1, r1c2 = st.columns([1, 1])
+    with r1c1:
+        st.container(border=True).plotly_chart(
+            get_wri_growth_vs_inflation_plot(latest, resolution),
+            width="stretch",
         )
-        left_cell.plotly_chart(
-            get_current_inflation_indicator(latest, current_month, resolution)
-        )
-        right_cell = subcol2.container(
-            border=True, height="stretch", vertical_alignment="center"
-        )
-        right_cell.plotly_chart(
-            get_current_wri_indicator(latest, current_month, resolution)
-        )
-
-    with col12:
-        top_right_cell = col12.container(
-            border=True, height="stretch", vertical_alignment="center"
-        )
-        top_right_cell.plotly_chart(
-            get_wri_growth_vs_inflation_plot(latest, resolution)
+    with r1c2:
+        st.container(border=True).plotly_chart(
+            get_real_wage_index_plot(latest), width="stretch"
         )
 
     plot_type = st.pills(
@@ -959,45 +956,35 @@ def main():
     if plot_type is None:
         plot_type = "CPI vs. WRI"
 
-    col21, col22 = st.columns([3, 4])
-
-    with col21:
-        bottom_left_cell = col21.container(
-            border=True, height="stretch", vertical_alignment="center"
-        )
+    r2c1, r2c2 = st.columns([3, 4])
+    with r2c1:
+        cell = st.container(border=True)
         if plot_type == "CPI vs. WRI":
-            bottom_left_cell.plotly_chart(get_wri_vs_cpi_plot(latest))
+            cell.plotly_chart(get_wri_vs_cpi_plot(latest), width="stretch")
         elif plot_type == "CPI: Food vs Non-Food":
-            bottom_left_cell.plotly_chart(get_cpi_food_vs_nonfood_plot(latest))
+            cell.plotly_chart(get_cpi_food_vs_nonfood_plot(latest), width="stretch")
         elif plot_type == "CPI: Rural vs Urban":
-            bottom_left_cell.plotly_chart(get_cpi_rural_vs_urban_plot(latest))
+            cell.plotly_chart(get_cpi_rural_vs_urban_plot(latest), width="stretch")
         elif plot_type == "WRI: Sectors":
-            bottom_left_cell.plotly_chart(get_wri_sectors_plot(latest))
-
-    with col22:
-        bottom_right_cell = col22.container(
-            border=True, height="stretch", vertical_alignment="center"
+            cell.plotly_chart(get_wri_sectors_plot(latest), width="stretch")
+    with r2c2:
+        st.container(border=True).plotly_chart(
+            get_real_wage_growth_plot(latest), width="stretch"
         )
-        bottom_right_cell.plotly_chart(get_real_wage_growth_plot(latest))
 
-    col31, col32, col33 = st.columns([1, 3, 1])
+    sector_selection = st.pills(
+        label="WRI Sector",
+        options=["General", "Agriculture", "Industry", "Service"],
+        selection_mode="single",
+        default="General",
+    )
+    if sector_selection is None:
+        sector_selection = "General"
 
-    with col32:
-        sector_selection = st.pills(
-            label="WRI Sector",
-            options=["General", "Agriculture", "Industry", "Service"],
-            selection_mode="single",
-            default="General",
-        )
-        if sector_selection is None:
-            sector_selection = "General"
-
-        choroplet_cell = col32.container(
-            border=True, height="stretch", vertical_alignment="center"
-        )
-        choroplet_cell.plotly_chart(
-            get_wri_by_region_choropleth(latest, sector_selection)
-        )
+    st.container(border=True).plotly_chart(
+        get_wri_by_region_choropleth(latest, sector_selection),
+        width='stretch',
+    )
 
 
 main()
